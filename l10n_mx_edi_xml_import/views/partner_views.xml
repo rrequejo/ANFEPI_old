@@ -1,0 +1,20 @@
+<odoo>
+  <data>
+    <record id="view_partner_property_form_default_import_xml_account" model="ir.ui.view">
+      <field name="name">view_partner_property_form_default_import_xml_account</field>
+      <field name="model">res.partner</field>
+      <field name="inherit_id" ref="account.view_partner_property_form"/>
+      <field name="arch" type="xml">
+        <page name='accounting' position='inside'>
+          <group name='xml_import'
+            string='Importacion de facturas por xml'
+            colspan='4'>
+            <group col='2'>
+              <field name='default_xml_import_account' />
+            </group>
+          </group>
+        </page>
+      </field>
+    </record>
+  </data>
+</odoo>
