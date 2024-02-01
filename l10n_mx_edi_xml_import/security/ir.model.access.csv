@@ -1,3 +1,0 @@
-id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_xml_import_wizard,access_xml_import_wizard,model_xml_import_wizard,,1,1,1,0
-product_template_unspsc_multi,product.template.unspsc.multi,model_product_template_unspsc_multi,,1,1,1,1
