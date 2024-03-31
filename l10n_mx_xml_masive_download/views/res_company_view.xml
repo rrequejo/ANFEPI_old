@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_company_form_inherit_social_media" model="ir.ui.view">
+        <field name="name">res.company.form.inherit.social.media</field>
+        <field name="model">res.company</field>
+        <field name="inherit_id" ref="base.view_company_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group[@name='social_media']" position="after">
+                <div class="row mt16 o_settings_container" id="l10n_mx_edi_fiel">
+                
+                <h2 >FIEL (MX)</h2>
+                    <div class="col-12 o_setting_box" title="The parameters to configure the MX FIEL certificate.">
+                        <div class="o_setting_left_pane"/>
+                        <div class="o_setting_right_pane">
+                            <span class="o_form_label">MX Certificates</span>
+                            <div class="text-muted">
+                                Configure your FIEL SAT certificates.
+                            </div>
+                            <div class="row mt16">
+                                <field name="l10n_mx_edi_fiel_ids" string="Certificates"
+                                    context="{'default_l10n_mx_fiel': True }"
+                                >
+                                </field>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>
