@@ -1,0 +1,188 @@
+<odoo>
+    <data>
+        
+        <record id="view_account_edi_downloaded_xml_sat_tree" model="ir.ui.view">
+            <field name="name">account.edi.downloaded.xml.sat.tree</field>
+            <field name="model">account.edi.downloaded.xml.sat</field>
+            <field name="arch" type="xml">
+                <tree string="XML SAT" create="0">
+                    <field name="name" optional="show"/>
+                    <field name="company_id" optional="show"/>                    
+                    <field name="partner_id" optional="show"/>
+                    <field name="tax_regime" optional="show"/>
+                    <field name="invoice_id" optional="show"/>
+                    <field name="payment_method" optional="show"/>
+                    <field name="payment_method_sat" optional="show"/>
+                    <field name="cfdi_type" optional="show"/>
+                    <field name="cfdi_usage" optional="show"/>
+                    <field name="document_type" optional="show"/>
+                    <field name="state" widget="badge" 
+                        decoration-info="state == 'not_imported'"
+                        decoration-success="state == 'posted'"
+                        decoration-warning="state == 'cancel'"
+                    />  
+                    <field name="document_date" optional="show"/>
+                    <field name="sub_total" optional="show"/>
+                    <field name="amount_total" optional="show"/>
+                </tree>
+
+            </field>
+        </record>
+
+        <record id="view_account_edi_downloaded_xml_sat_tree_search" model="ir.ui.view">
+            <field name="name">account.edi.downloaded.xml.sat.view.search</field>
+            <field name="model">account.edi.downloaded.xml.sat</field>
+            <field name="arch" type="xml">
+                <search>
+                    <filter string="Con Forma de Pago PUE" name="PUE" domain="[('payment_method','=','PUE')]"/>
+                    <filter string="Con Forma de Pago PPD" name="PPD" domain="[('payment_method','=','PPD')]"/>
+                    <filter string="Uso de CFDI sin Efectos Fiscales" name="usoCfdi" domain="[('cfdi_usage','=','S01')]"/>
+                    <group expand="0" string="Group By">
+                        <filter string="Regimen Fiscal Partner" name="fiscal_regime" context="{'group_by': 'tax_regime'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+       <record id="view_account_edi_downloaded_xml_sat_form" model="ir.ui.view">
+            <field name="name">account.edi.downloaded.xml.sat.form</field>
+            <field name="model">account.edi.downloaded.xml.sat</field>
+            <field name="arch" type="xml">
+                <form string="XML SAT" create="0">
+                    <header>
+                        <button string="Importar Factura" name="action_import_invoice" type="object" class="oe_highlight" invisible="imported==True or document_type=='P'"/> 
+                        <button string="Adjuntar Complemento" name="action_add_payment" type="object" class="oe_highlight" invisible="document_type!='P'"/> 
+                        <field name="state" widget="statusbar" statusbar_visible="not_imported,draft,posted,cancel,error_relating"/>
+                    </header>
+                    <sheet>
+                        <group>
+                            <group>
+                                <field name="document_type" invisible="1"/> 
+                                <field name="imported" invisible="1"/>
+                                <field name="name" readonly="1"/>
+                                <field name="company_id" readonly="1"/>
+                                <field name="partner_id"/>
+                                <field name="invoice_id" readonly="1"/>
+                                <field name="xml_file" filename="xml_file_name" readonly="1" />
+                                <field name="xml_file_name" invisible="1"/>
+                                <field name="cfdi_type" readonly="1" />
+                                <field name="document_date" readonly="1"/>
+                            </group>
+                        </group>
+
+                        <field name="downloaded_product_id" invisible="document_type == 'P'">
+
+                            <tree string="Products" editable="bottom" delete="0">
+                                <field name="product_rel"/>
+                                <field name="sat_id" readonly="1"/>
+                                <field name="description" readonly="1"/>
+                                <field name="tax_id" readonly="1" widget="many2many_tags"/>
+                                <field name="quantity" readonly="1"/>
+                                <field name="unit_value" readonly="1"/>
+                                <field name="total_amount" readonly="1"/>
+                            </tree>
+                        </field>
+                        <field name="downloaded_product_id" invisible="document_type != 'P'">
+                            <tree string="Products" editable="bottom" delete="0">
+                                <field name="sat_id" readonly="1"/>
+                                <field name="description" readonly="1"/>
+                                <field name="quantity" readonly="1"/>
+                                <field name="total_amount" readonly="1"/>
+                            </tree>
+                        </field>
+
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+
+
+
+
+       
+
+
+
+        <record id="view_account_edi_api_download_tree" model="ir.ui.view">
+            <field name="name">account.edi.api.download.tree</field>
+            <field name="model">account.edi.api.download</field>
+            <field name="arch" type="xml">
+                <tree string="XML SAT">
+                    <field name="vat"/>
+                    <field name="company_id"/>
+                    <field name="cfdi_type"/>
+                    <field name="date_start"/>
+                    <field name="date_end"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="view_account_edi_api_download_form" model="ir.ui.view">
+            <field name="name">account.edi.api.download.form</field>
+            <field name="model">account.edi.api.download</field>
+            <field name="arch" type="xml">
+                <form>
+                    <header>
+                        <button name="action_download" string="Import" class="oe_highlight" type="object" invisible="state!='not_imported'" />             
+                        <button name="action_update" string="Actualizar Lote" class="oe_highlight" type="object" invisible="state=='not_imported'"/>             
+                        <field name="state" widget="statusbar" statusbar_visible="not_imported,imported,updated,error"/>
+                    </header>
+                    <sheet>
+                        <div name="button_box" position="inside">
+                        <button class="oe_stat_button" type="object" name="view_xml_sat" icon="fa-archive">
+                             <field name="xml_count" widget="statinfo" string="XML"/>
+                        </button>
+                        </div>
+                        <h1>Descargar XMLs del SAT</h1>
+                        <group>
+                            <field name="last_update_date" readonly="1" />
+                        </group>
+
+                        <separator string="Filtros de descarga" colspan="2"/>
+                        <group col="2">
+                            <group>
+                                <field name="vat" readonly="1"/>
+                                <field name="company_id" options="{'no_open' : True}"/>
+                                <field name="cfdi_type" readonly="state!='not_imported'"/>
+                                
+                                
+                          
+                                <field name="date_start" readonly="state!='not_imported'"/>
+                                <field name="date_end" readonly="state!='not_imported'"/>
+                           
+                            </group>
+                            <group>
+                                <separator string="Tipo de documento" colspan="2"/>
+                                <field name="ingreso" readonly="state!='not_imported'"/>
+                                <field name="egreso" readonly="state!='not_imported'"/>
+                                <field name="pago" readonly="state!='not_imported'"/>
+                                <field name="nomina" readonly="state!='not_imported'"/>
+                                <separator string="Estatus SAT" colspan="2"/>
+                                <field name="cancelado" readonly="state!='not_imported'"/>
+                                <field name="valido" readonly="state!='not_imported'"/>
+                                <field name="no_encontrado" readonly="state!='not_imported'"/>
+                            </group>  
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="account_edi_api_download_action" model="ir.actions.act_window">
+            <field name="name">Descargar XMLs del SAT</field>
+            <field name="res_model">account.edi.api.download</field>
+            <field name="view_mode">tree,form</field>
+            <field name="target">current</field>
+        </record>
+        <menuitem id="account_edi_api_download_menu" parent="account.menu_finance_entries_actions" action="account_edi_api_download_action" sequence="1" name="Importar XMLs del SAT" groups="l10n_mx_xml_masive_download.group_access_xml_sat_user"/>
+        
+        <record id="account_edi_download_xml_sat_view_action" model="ir.actions.act_window">
+            <field name="name">XMLs Descargados del SAT</field>
+            <field name="res_model">account.edi.downloaded.xml.sat</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+        <menuitem id="account_edi_download_xml_sat_view_menu" parent="account.menu_finance_entries_actions" action="account_edi_download_xml_sat_view_action" name="XML SAT" groups="l10n_mx_xml_masive_download.group_access_xml_sat_user"/>
+
+    </data>
+</odoo>
