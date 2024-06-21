@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+<data>
+   <template id="report_product" >
+       <t t-call="web.html_container">
+           <t t-foreach="docs" t-as="o">
+           
+               <t t-call="web.basic_layout">
+                   <div class="page">
+                   
+                        <h1>Factura: </h1>
+                        <div class="row">
+                            <div class="col-6">
+                                <t t-if="o.cfdi_type == 'emitidos'">
+                                    <h4>Receptor:</h4>
+                                    <p>Nombre: <span t-field="o.partner_id.name"/></p>
+                                    <p>RFC: <span t-field="o.partner_id.vat"/></p>
+                                    <p>Regimen Fiscal: <span t-field="o.partner_id.property_account_position_id"/></p>
+                                    <p>Uso CFDI: <span t-field="o.cfdi_usage"/></p>
+                                </t>
+                                <t t-if="o.cfdi_type != 'emitidos'">
+                                    <h4>Emisor:</h4>
+                                    <p>Nombre: <span t-field="o.partner_id.name"/></p>
+                                    <p>RFC: <span t-field="o.partner_id.vat"/></p>
+                                    <p>Regimen Fiscal: <span t-field="o.partner_id.property_account_position_id"/></p>
+                                    <p>Uso CFDI: <span t-field="o.cfdi_usage"/></p>
+                                </t>
+                            </div>
+                            <div class="col-6">
+                                <t t-if="o.cfdi_type == 'emitidos'">
+                                    <h4>Emisor:</h4>
+                                    <p>Nombre: <span t-field="o.company_id.name"/></p>
+                                    <p>RFC: <span t-field="o.company_id.vat"/></p>
+                                    <p>Regimen Fiscal: <span t-field="o.company_id.partner_id.property_account_position_id"/></p>
+                                </t>
+                                <t t-if="o.cfdi_type != 'emitidos'">
+                                    <h4>Receptor:</h4>
+                                    <p>Nombre: <span t-field="o.company_id.name"/></p>
+                                    <p>RFC: <span t-field="o.company_id.vat"/></p>
+                                    <p>Regimen Fiscal: <span t-field="o.company_id.partner_id.property_account_position_id"/></p>
+                                </t>
+                            </div>
+                        </div>
+                        <br/>
+                        <h4>Otros datos:</h4>
+                        <div class="row">
+                            <div class="col-6">
+                                <p>Forma de Pago:   <span t-field="o.payment_method"/></p>
+                                <p>Serie:   <span t-field="o.serie"/></p>
+                                <p>Folio:   <span t-field="o.folio"/></p>
+                                <p>Moneda:   <span t-field="o.divisa"/></p>
+                            </div>
+                            <div class="col-6">
+                                <p>UUID:   <span t-field="o.name"/></p>       
+                                <!-- <p>Fecha de sellado:   <span t-field="o.stamp_date"/></p> -->
+                                <p>Tipo de comprobante:   <span t-field="o.document_type"/></p>
+                            </div>
+                        </div>
+                      
+                        <br/>
+                        <h4>Conceptos: </h4>
+                        <br/>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width:30%">Descripcion</th>
+                                    <th style="width:14%">Clave Sat</th>
+                                    <th style="width:14%">Cantidad Unidad</th>
+                                    <th style="width:14%">Valor Unitario</th>
+                                    <th style="width:14%">Importe</th>
+                                    <th style="width:14%">Impuestos y Retenciones</th>
+                                    
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="o.downloaded_product_id" t-as="line">
+                                    <t t-set="quantity" t-value="line.quantity"/>
+                                    <t t-set="product_metrics" t-value="line.product_metrics"/>
+
+                                    <tr>
+                                        <td style="p-2"><t t-esc="line.description" /></td>
+                                        <td><t t-esc="line.sat_id"/></td>
+                                        <td><span><t t-esc="quantity"/> <t t-esc="product_metrics"/></span></td>
+                                        <td><t t-esc="'{:,}'.format(line.unit_value)"/></td>
+                                        <td><t t-esc="'{:,}'.format(line.total_amount)"/></td>
+                                        <td>
+                                            <t t-foreach="line.tax_id" t-as="tax">
+                                            <span><t t-esc="tax.name"/>: $<t t-esc="'{:,}'.format(tax.amount * (line.total_amount/100))"/></span>                                                <br/>
+                                            </t>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+
+                        <h5>Subtotal: <span t-field="o.sub_total"/></h5>
+                        <h5>Impuestos: <span t-field="o.total_impuestos"/></h5>
+                        <h5>Retenciones: -<span t-field="o.total_retenciones"/></h5>
+                        <h5>Total: <span t-field="o.amount_total"/></h5>
+
+
+                   </div>
+               </t>
+           </t>
+       </t>
+   </template>
+</data>
+</odoo>
