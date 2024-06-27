@@ -4,12 +4,43 @@ import base64
 from lxml import etree
 from lxml.objectify import fromstring
 
+USO_CFDI  = [
+    ("G01", "Adquisición de mercancías"),
+    ("G02", "Devoluciones, descuentos o bonificaciones"),
+    ("G03", "Gastos en general"),
+    ("I01", "Construcciones"),
+    ("101", "Construcciones"),
+    ("I02", "Mobiliario y equipo de oficina por inversiones"),
+    ("I03", "Equipo de transporte"),
+    ("I04", "Equipo de cómputo y accesorios"),    
+    ("105", "Dados, troqueles, moldes, matrices y herramental"),
+    ("106", "Comunicaciones telefónicas"),
+    ("107", "Comunicaciones satelitales"),
+    ("108", "Otra maquinaria y equipo"),
+    ("D01", "Honorarios médicos, dentales y gastos hospitalarios"),
+    ("D02", "Gastos médicos por incapacidad o discapacidad"),
+    ("D03", "Gastos funerales"),
+    ("D04", "Donativos"),
+    ("D05", "Intereses reales efectivamente pagados por créditos hipotecarios (casa habitación)"),
+    ("D06", "Aportaciones voluntarias al SAR"),
+    ("D07", "Primas por seguros de gastos médicos"),
+    ("D08", "Gastos de transportación escolar obligatoria"),
+    ("D09", "Depósitos en cuentas para el ahorro, primas que tengan como base planes de pensiones"),
+    ("D10", "Pagos por servicios educativos (colegiaturas)"),
+    ("CP01", "Pagos"),
+    ("CN01", "Nómina"),
+    ("S01", "Sin Efectos Fiscales"),
+]
+
 class AccountMove(models.Model):
     _inherit = 'account.move'
 
     stored_sat_uuid = fields.Char(compute='_get_uuid_from_xml_attachment', string="CFDI UUID", store=True, index=True, default=False)
     xml_imported_id = fields.Many2one('account.edi.downloaded.xml.sat', string="Downloaded XML")
 
+
+    payment_method = fields.Selection([('PPD','PPD'),('PUE','PUE')], string='Metodo de Pago')
+    uso_sat = fields.Selection(USO_CFDI, string="Uso CFDI")
     """
     Method created to have a field that stores the UUID of the CFDI in the account.move model
     To be able to relate the downloaded xml with the invoice

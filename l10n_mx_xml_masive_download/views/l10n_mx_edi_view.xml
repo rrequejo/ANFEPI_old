@@ -52,7 +52,8 @@
                     <header>
                         <button string="Importar Factura" name="action_import_invoice" type="object" class="oe_highlight" invisible="imported==True or document_type=='P'"/> 
                         <button string="Adjuntar Complemento" name="action_add_payment" type="object" class="oe_highlight" invisible="document_type!='P'"/> 
-                        <field name="state" widget="statusbar" statusbar_visible="not_imported,draft,posted,cancel,error_relating"/>
+                        <button string="Ignorar XML" name="action_ignor"  class="oe_highlight" type="object" invisible="state=='ignored'"/>
+                        <field name="state" widget="statusbar" statusbar_visible="not_imported,draft,posted,cancel,ignored,error_relating"/>
                     </header>
                     <sheet>
                         <group>
@@ -125,7 +126,8 @@
                 <form>
                     <header>
                         <button name="action_download" string="Import" class="oe_highlight" type="object" invisible="state!='not_imported'" />             
-                        <button name="action_update" string="Actualizar Lote" class="oe_highlight" type="object" invisible="state=='not_imported'"/>             
+                        <button name="action_update" string="Actualizar Lote" class="oe_highlight" type="object" invisible="state=='not_imported'"/>    
+                        
                         <field name="state" widget="statusbar" statusbar_visible="not_imported,imported,updated,error"/>
                     </header>
                     <sheet>
@@ -158,6 +160,7 @@
                                 <field name="egreso" readonly="state!='not_imported'"/>
                                 <field name="pago" readonly="state!='not_imported'"/>
                                 <field name="nomina" readonly="state!='not_imported'"/>
+                                <field name="traslado" readonly="state!='not_imported'"/>
                                 <separator string="Estatus SAT" colspan="2"/>
                                 <field name="cancelado" readonly="state!='not_imported'"/>
                                 <field name="valido" readonly="state!='not_imported'"/>
