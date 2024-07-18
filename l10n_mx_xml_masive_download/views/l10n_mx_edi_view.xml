@@ -56,6 +56,11 @@
                         <field name="state" widget="statusbar" statusbar_visible="not_imported,draft,posted,cancel,ignored,error_relating"/>
                     </header>
                     <sheet>
+                        <div name="button_box" position="inside">
+                            <button class="oe_stat_button" type="object" name="view_invoice" icon="fa-pencil-square-o" invisible="not invoice_id">
+                                <field name="invoice_id" widget="statinfo" string="XML"/>
+                            </button>
+                        </div>
                         <group>
                             <group>
                                 <field name="document_type" invisible="1"/> 
@@ -63,9 +68,6 @@
                                 <field name="name" readonly="1"/>
                                 <field name="company_id" readonly="1"/>
                                 <field name="partner_id"/>
-                                <field name="invoice_id" readonly="1"/>
-                                <field name="xml_file" filename="xml_file_name" readonly="1" />
-                                <field name="xml_file_name" invisible="1"/>
                                 <field name="cfdi_type" readonly="1" />
                                 <field name="document_date" readonly="1"/>
                             </group>
@@ -86,13 +88,22 @@
                         <field name="downloaded_product_id" invisible="document_type != 'P'">
                             <tree string="Products" editable="bottom" delete="0">
                                 <field name="sat_id" readonly="1"/>
+
                                 <field name="description" readonly="1"/>
                                 <field name="quantity" readonly="1"/>
                                 <field name="total_amount" readonly="1"/>
                             </tree>
                         </field>
+                        <group>
+                            <field name="sub_total" readonly="1"/>
+                            <field name="amount_total" readonly="1"/>
+                        </group>
 
                     </sheet>
+                    <div class="oe_chatter">
+                        <field name="message_follower_ids" groups="base.group_user"/>
+                        <field name="message_ids"/>
+                    </div>
                 </form>
             </field>
         </record>

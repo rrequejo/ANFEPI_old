@@ -1,5 +1,5 @@
-from odoo import api, models, fields
-from odoo.exceptions import UserError
+from odoo import api, models, fields # type: ignore
+from odoo.exceptions import UserError # type: ignore
 
 class AccountInvoice(models.Model):
     _inherit = "account.move"
@@ -12,7 +12,7 @@ class AccountInvoice(models.Model):
         """Called by the Documents workflow row during the creation of records by the Create EDI document button.
         Use the last attachment in the xml and fill data in records.
 
-        :param default_account: Account that will be used in the invoice lines where the product is not fount. If it´s
+        :param default_account: Account that will be used in the invoice lines where the product is not fount. If it's
         empty, is used the journal account.
         :type domain: list
         """
@@ -44,7 +44,8 @@ class AccountInvoice(models.Model):
         return []
 
     def collect_taxes(self, taxes_xml):
-        """Get tax data of the Impuesto node of the xml and return
+        """
+        Get tax data of the Impuesto node of the xml and return
         dictionary with taxes datas
         :param taxes_xml: Impuesto node of xml
         :type taxes_xml: etree

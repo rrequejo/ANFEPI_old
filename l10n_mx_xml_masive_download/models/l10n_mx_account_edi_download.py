@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
-from odoo import api, fields, models, _, tools
-from odoo.exceptions import UserError, ValidationError, AccessError
-from lxml import etree
-from lxml.objectify import fromstring
+from odoo import api, fields, models, _, tools # type: ignore
+from odoo.exceptions import UserError, ValidationError, AccessError # type: ignore
+from lxml import etree # type: ignore
+from lxml.objectify import fromstring # type: ignore
 import base64
-import requests
+import requests # type: ignore
 
-from odoo.addons.l10n_mx_edi.models.l10n_mx_edi_document import (
+from odoo.addons.l10n_mx_edi.models.l10n_mx_edi_document import ( # type: ignore
     CFDI_CODE_TO_TAX_TYPE,
 )
 from io import BytesIO
@@ -95,13 +95,13 @@ class DownloadedXmlSat(models.Model):
     _name = "account.edi.downloaded.xml.sat"
     _description = "Account Edi Download From SAT Web Service"
     _check_company_auto = True
+    _inherit = ['mail.thread']
   
     name = fields.Char(string="UUID", required=True, index='trigram')
     active_company_id = fields.Integer(string='Empresa', compute='_compute_active_company_id')
     company_id = fields.Many2one('res.company', string='Empresa', default=lambda self: self.env.company.id) 
     partner_id = fields.Many2one('res.partner', string="Proveedor") # Cliente/Proveedor
     invoice_id = fields.Many2one('account.move', string="Factura Relacionada") # Factura
-    xml_file = fields.Binary(string='Archivo XML') # Archivo XML
     cfdi_type = fields.Selection([('recibidos', 'Recibidos'),('emitidos', 'Emitidos'), ], string='Tipo', required=True, default='emitidos') 
     batch_id = fields.Many2one(
         comodel_name='account.edi.api.download',
@@ -113,8 +113,8 @@ class DownloadedXmlSat(models.Model):
         ondelete="cascade",
         check_company=True,
     )
+    attachment_id = fields.Many2one('ir.attachment', string='XML Attachment')
     document_date =  fields.Date(string="Fecha de Documento")
-    xml_file_name = fields.Char(string='Nombre archivo XML')
     serie = fields.Char(string="Serie Factura")
     folio = fields.Char(string="Folio Factura")
     divisa = fields.Char(string="Divisa en Factura")
@@ -152,7 +152,7 @@ class DownloadedXmlSat(models.Model):
         'account.edi.downloaded.xml.sat.products',
         'downloaded_invoice_id',
         string='Downloaded product ID',)  
-    payment_method_sat = fields.Selection(PAYMENT_METHOD, string="Metodo de Pago")
+    payment_method_sat = fields.Selection(PAYMENT_METHOD, string="Forma de Pago")
     total_impuestos = fields.Float(string='Total Impuestos')
     total_retenciones = fields.Float(string='Total Retenciones')
     tax_regime = fields.Selection(TAX_REGIME, string="Regimen Fiscal")
@@ -162,6 +162,16 @@ class DownloadedXmlSat(models.Model):
 
     def _compute_active_company_id(self):
         self.active_company_id = self.env.company.id
+
+    def view_invoice(self):
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Invoice',
+            'view_mode': 'form',
+            'res_model': 'account.move',
+            'res_id': self.invoice_id.id,
+            'target': 'current',
+        }
 
     def relate_download(self): 
         for item in self:
@@ -239,17 +249,17 @@ class DownloadedXmlSat(models.Model):
                     'price_unit': concepto.unit_value,
                     'credit': concepto.total_amount,
                     'tax_ids': concepto.tax_id,
-                    'downloaded_product_rel': concepto.id, 
+                    'downloaded_product_rel': concepto.id,
                 }))
             account_move = self.env['account.move'].create(account_move_dict)
             item.write({'invoice_id': account_move.id, 'state': 'draft'})
 
             
             self.generate_pdf_attatchment(account_move.id)
-
+            xml_file = self.attachment_id.filtered(lambda x: x.mimetype == 'application/xml')
             attachment_values = {
-                'name': self.xml_file_name,  # Name of the XML file
-                'datas': self.xml_file,  # Read XML file content
+                'name': xml_file.name,  # Name of the XML file
+                'datas': xml_file.datas,  # Read XML file content
                 'res_model': 'account.move',
                 'res_id': account_move.id,
                 'mimetype': 'application/xml',
@@ -260,7 +270,7 @@ class DownloadedXmlSat(models.Model):
 
     def action_add_payment(self):
         # Buscar factura
-        root = ET.fromstring(base64.b64decode(self.xml_file))
+        root = ET.fromstring(base64.b64decode(self.attachment_id.filtered(lambda x: x.mimetype == 'application/xml')))
         namespace = {'cfdi': 'http://www.sat.gob.mx/cfd/4', 'pago20': 'http://www.sat.gob.mx/Pagos20'}
         id_documentos = []
 
@@ -278,10 +288,11 @@ class DownloadedXmlSat(models.Model):
                     # Buscar el Id del pago
                     
                     payments = self.env['account.payment'].search([('reconciled_invoice_ids','=',move.id)])
+                    xml_file = self.attachment_id.filtered(lambda x: x.mimetype == 'application/xml')
                     for payment in payments:
                         attachment_values = {
-                                'name': self.xml_file_name,  # Name of the XML file
-                                'datas': self.xml_file,  # Read XML file content
+                                'name': xml_file.name,  # Name of the XML file
+                                'datas': xml_file.datas,  # Read XML file content
                                 'res_model': 'account.payment',
                                 'res_id': payment.id,
                                 'mimetype': 'application/xml',
@@ -392,6 +403,7 @@ class AccountEdiApiDownload(models.Model):
         Used to compare descriptions that have dates or numbers
         """
         def similar(a, b):
+            print()
             return SequenceMatcher(None, a, b).ratio()
         
         def _l10n_mx_edi_import_cfdi_get_tax_from_node(self, tax_node, is_withholding=False):
@@ -436,6 +448,7 @@ class AccountEdiApiDownload(models.Model):
                     valor_unitario = concepto_element.get('ValorUnitario')
                     importe = concepto_element.get('Importe')
 
+
                     taxes = []
                     taxes_ids = []
                     total_impuestos = 0
@@ -463,11 +476,11 @@ class AccountEdiApiDownload(models.Model):
                             pass
                     # Buscamos a ver si ya se relaciono el producto
                     domain = [
-                        ('sat_id', '=', clave_prod_serv),
+                        ('sat_id.code', '=', clave_prod_serv),
                         ('downloaded_invoice_id.partner_id', '!=', False)
                         ]
-                    products = self.env['account.edi.downloaded.xml.sat.products'].search(domain, limit=1)
                     
+                    products = self.env['account.edi.downloaded.xml.sat.products'].search(domain, limit=1)
                     final_product = False
                     if products:
                         for product in products:
@@ -479,7 +492,7 @@ class AccountEdiApiDownload(models.Model):
                     
                     # Create a dictionary for each concepto and append it to the list
                     concepto_info = {
-                        'sat_id': clave_prod_serv,
+                        'sat_id':self.env['product.unspsc.code'].search([('code','=',clave_prod_serv)]).id,
                         'quantity': cantidad,
                         'product_metrics': clave_unidad,
                         'description': descripcion,
@@ -535,7 +548,13 @@ class AccountEdiApiDownload(models.Model):
                 domain = [('name', '=', cfdi_infos.get('uuid'))]
                 if self.env['account.edi.downloaded.xml.sat'].search(domain, limit=1):
                     continue
-
+                attachment_vals = {
+                    'name': xml["uuid"] + ".xml",
+                    'datas': base64.b64encode(xml["xmlFile"].encode('utf-8')),
+                    'res_model': 'account.edi.downloaded.xml.sat',
+                    'type': 'binary',
+                    'mimetype': 'application/xml',
+                }
               
                 """ 'uuid', 'supplier_rfc', 'customer_rfc', 'amount_total', 'cfdi_node', 'usage', 'payment_method'
                 'bank_account', 'sello', 'sello_sat', 'cadena', 'certificate_number', 'certificate_sat_number'
@@ -550,12 +569,10 @@ class AccountEdiApiDownload(models.Model):
                     tax_regime = root.find('.//cfdi:Emisor', namespaces={'cfdi': 'http://www.sat.gob.mx/cfd/4'}).get("RegimenFiscal")
                 vals = {
                     'name': cfdi_infos.get('uuid'),
-                    'xml_file': base64.b64encode(xml["xmlFile"].encode('utf-8')),
                     'cfdi_type': self.cfdi_type,
                     'company_id': self.company_id.id,
                     'partner_id': partner.id if partner else False,
                     'document_date': root.attrib.get('Fecha'),
-                    'xml_file_name': xml["uuid"],
                     'state': 'not_imported',
                     'document_type': root.get('TipoDeComprobante'),
                     'payment_method': cfdi_infos.get('payment_method'),
@@ -567,6 +584,7 @@ class AccountEdiApiDownload(models.Model):
                     'divisa':root.get('Moneda'),
                     'cfdi_usage': cfdi_infos.get('usage'),
                     'tax_regime': tax_regime,
+                    'batch_id':self.id
                 }
 
                 if root.get('TipoDeComprobante') == 'P':
@@ -574,20 +592,44 @@ class AccountEdiApiDownload(models.Model):
                     vals['amount_total'] = monto_total_pagos
                     vals['sub_total'] = monto_total_pagos
 
+
                 # Creamos los productos del xml
                 # recived: boolean to search type of tax
                 products, total_impuestos, total_retenciones = get_products(xml["xmlFile"])
                 vals['total_impuestos'] = total_impuestos
                 vals['total_retenciones'] = total_retenciones
                 if products:
+                    """if root.get('Descuento') is not None:
+                        descuento = -float(root.get('Descuento'))
+                        products.append({
+                            'quantity': 1,
+                            'description': "DESCUENTO",
+                            'unit_value': descuento,
+                            'total_amount': descuento,
+                            'downloaded_invoice_id': False,
+                        })"""
                     if root.get('TipoDeComprobante') == 'P':
                         for product in products:
                             product['total_amount'] = float(monto_total_pagos)
                         
                     created_products = self.env['account.edi.downloaded.xml.sat.products'].create(products)
                     vals['downloaded_product_id'] = created_products
-                xml_sat_ids.append((0, 0, vals))
-        self.write({'xml_sat_ids': xml_sat_ids,'state': 'imported'})
+
+                    record = self.env['account.edi.downloaded.xml.sat'].create(vals)
+                    attachment = self.env['ir.attachment'].create({
+                        'name': xml["uuid"] + ".xml",
+                        'datas': base64.b64encode(xml["xmlFile"].encode('utf-8')),
+                        'res_model': 'account.edi.downloaded.xml.sat',
+                        'res_id': record.id,
+                        'type': 'binary',
+                        'mimetype': 'application/xml',
+                    })
+
+                    # Update the main record with the attachment ID
+                    record.write({'attachment_id': attachment.id})
+                    
+                #xml_sat_ids.append((0, 0, vals))
+        self.write({'state': 'imported'}) #'xml_sat_ids': xml_sat_ids,
     
     def action_update(self): 
         self.action_download()
@@ -596,19 +638,13 @@ class AccountEdiApiDownload(models.Model):
             'state':'updated',
         })
 
-
-    
-
-  
-
-
 class DownloadedXmlSatProducts(models.Model):
     _name = "account.edi.downloaded.xml.sat.products"
     _description = "Account Edi Download From SAT Web Service Products"
 
-    sat_id = fields.Char(string="Codigo SAT", required=True)
+    sat_id = fields.Many2one('product.unspsc.code', string="Codigo SAT")
     quantity = fields.Float(string="Cantidad", required=True)
-    product_metrics = fields.Char(string="Clave Unidad", required=True)
+    product_metrics = fields.Char(string="Clave Unidad")
     description = fields.Char(string="Descripcion", required=True)
     unit_value = fields.Float(string="Valor Unitario", required=True)
     total_amount = fields.Float(string="Importe", required=True)
