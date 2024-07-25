@@ -18,13 +18,16 @@ XML Masive Download from SAT WebService.
         'views/l10n_mx_edi_view.xml',
         'views/res_company_view.xml',
         'views/account_move_view.xml',
+        'views/custom_accounting_settings_view.xml',
         'security/ir_rules.xml',
         'models/server_actions.xml',
         'report/product_report.xml',
         'report/ir_actions_report.xml',
+        'views/invoice_wizard_views.xml'
         
     ],
     'images': ['static/description/icon.png'],
     'auto_install': False,
     "license": "AGPL-3",
+
 }

@@ -52,7 +52,7 @@
                     <header>
                         <button string="Importar Factura" name="action_import_invoice" type="object" class="oe_highlight" invisible="imported==True or document_type=='P'"/> 
                         <button string="Adjuntar Complemento" name="action_add_payment" type="object" class="oe_highlight" invisible="document_type!='P'"/> 
-                        <button string="Ignorar XML" name="action_ignor"  class="oe_highlight" type="object" invisible="state=='ignored'"/>
+                        <button string="Relacionar Manualmente" name="action_wizard_relate"  class="oe_highlight" type="object" invisible="imported==True or document_type=='P'"/>
                         <field name="state" widget="statusbar" statusbar_visible="not_imported,draft,posted,cancel,ignored,error_relating"/>
                     </header>
                     <sheet>
@@ -70,6 +70,7 @@
                                 <field name="partner_id"/>
                                 <field name="cfdi_type" readonly="1" />
                                 <field name="document_date" readonly="1"/>
+                                <field name="discount" readonly="1" invisible="not discount" />
                             </group>
                         </group>
 
@@ -82,6 +83,7 @@
                                 <field name="tax_id" readonly="1" widget="many2many_tags"/>
                                 <field name="quantity" readonly="1"/>
                                 <field name="unit_value" readonly="1"/>
+                                <field name="discount" readonly="1"/>
                                 <field name="total_amount" readonly="1"/>
                             </tree>
                         </field>
@@ -95,8 +97,8 @@
                             </tree>
                         </field>
                         <group>
-                            <field name="sub_total" readonly="1"/>
-                            <field name="amount_total" readonly="1"/>
+                            <field name="sub_total" widget='monetary' readonly="1"/>
+                            <field name="amount_total"  widget='monetary' readonly="1"/>
                         </group>
 
                     </sheet>
@@ -189,14 +191,25 @@
             <field name="view_mode">tree,form</field>
             <field name="target">current</field>
         </record>
-        <menuitem id="account_edi_api_download_menu" parent="account.menu_finance_entries_actions" action="account_edi_api_download_action" sequence="1" name="Importar XMLs del SAT" groups="l10n_mx_xml_masive_download.group_access_xml_sat_user"/>
+        <menuitem id="account_edi_api_download_menu" 
+            parent="account.menu_finance_entries_actions" 
+            action="account_edi_api_download_action" 
+            sequence="1" name="Importar XMLs del SAT" 
+            groups="l10n_mx_xml_masive_download.group_access_xml_sat_user"
+            />
         
         <record id="account_edi_download_xml_sat_view_action" model="ir.actions.act_window">
             <field name="name">XMLs Descargados del SAT</field>
             <field name="res_model">account.edi.downloaded.xml.sat</field>
             <field name="view_mode">tree,form</field>
         </record>
-        <menuitem id="account_edi_download_xml_sat_view_menu" parent="account.menu_finance_entries_actions" action="account_edi_download_xml_sat_view_action" name="XML SAT" groups="l10n_mx_xml_masive_download.group_access_xml_sat_user"/>
+        <menuitem id="account_edi_download_xml_sat_view_menu" 
+            parent="account.menu_finance_entries_actions" 
+            action="account_edi_download_xml_sat_view_action" 
+            name="XML SAT" 
+            groups="l10n_mx_xml_masive_download.group_access_xml_sat_user"
+        />
 
+        
     </data>
 </odoo>

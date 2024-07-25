@@ -1,0 +1,20 @@
+<odoo>
+    <record id="res_config_settings_view_form" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.account.l10n.xml</field>
+        <field name="model">res.config.settings</field>
+        <field name="priority" eval="40"/>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//block[@id='account_reports_settings']" position="after">
+                <block title="Descarga Masiva XML SAT">
+                    <setting title="Api Key" id="l10n_mx_xml_download_api_key" company_dependent="1" help="Se obtiene en la pagina web donde subio los documentos en la pestaña de empresas">
+                            <field name="l10n_mx_xml_download_api_key" password="True"/>
+                    </setting>
+                    <setting title="Creacion Automatica de Contactos" id="l10n_mx_xml_download_automatic_contact_creation" company_dependent="1" help="Si al momento de descargar no se encuentra el contacto se creara de manera automatica">
+                            <field name="l10n_mx_xml_download_automatic_contact_creation"/>
+                    </setting>
+                </block>
+            </xpath>
+        </field>
+    </record>
+</odoo>

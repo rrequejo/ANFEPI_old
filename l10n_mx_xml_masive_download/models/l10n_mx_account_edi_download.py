@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-from odoo import api, fields, models, _, tools # type: ignore
-from odoo.exceptions import UserError, ValidationError, AccessError # type: ignore
+from odoo import api, fields, models, _ # type: ignore
+from odoo.exceptions import UserError # type: ignore
 from lxml import etree # type: ignore
 from lxml.objectify import fromstring # type: ignore
 import base64
@@ -147,6 +147,7 @@ class DownloadedXmlSat(models.Model):
     ], string='Tipo de Documento')
     cfdi_usage = fields.Selection(USO_CFDI, string="Uso CFDI")
     imported = fields.Boolean(string="Importado", default=False)
+    discount = fields.Float(string="Descuento")
     
     downloaded_product_id = fields.One2many(
         'account.edi.downloaded.xml.sat.products',
@@ -178,6 +179,10 @@ class DownloadedXmlSat(models.Model):
             move = self.env['account.move'].search([('stored_sat_uuid', '=', item.name)], limit=1)
             if move:
                 item.write({'invoice_id': move.id, 'state': move.state})
+
+    def action_wizard_relate(self):
+        action = self.env.ref('l10n_mx_xml_masive_download.action_open_invoice_wizard').read()[0]
+        return action
     
     def generate_pdf_attatchment(self, account_id):
 
@@ -218,9 +223,7 @@ class DownloadedXmlSat(models.Model):
 
     def action_import_invoice(self):
         for item in self:
-
-            ref = (self.serie + '/' if self.serie else '') + (self.folio if self.folio else '')
-
+            discountFlag = False
             ref = (self.serie + '/' if self.serie else '') + (self.folio if self.folio else '')
 
             account_move_dict = {
@@ -240,7 +243,11 @@ class DownloadedXmlSat(models.Model):
                 'xml_imported_id': item.id
             }
 
+            discount = 0
             for concepto in item.downloaded_product_id:
+                    if concepto.discount:
+                        discount = abs(concepto.discount / concepto.quantity / concepto.unit_value)* 100
+                    
                     account_move_dict['invoice_line_ids'].append((0, 0, {
                     'product_id': concepto.product_rel.id,
                     'name': concepto.description,
@@ -250,9 +257,11 @@ class DownloadedXmlSat(models.Model):
                     'credit': concepto.total_amount,
                     'tax_ids': concepto.tax_id,
                     'downloaded_product_rel': concepto.id,
+                    'discount': discount if discount else None
                 }))
             account_move = self.env['account.move'].create(account_move_dict)
             item.write({'invoice_id': account_move.id, 'state': 'draft'})
+
 
             
             self.generate_pdf_attatchment(account_move.id)
@@ -266,7 +275,7 @@ class DownloadedXmlSat(models.Model):
             }
             self.env['ir.attachment'].create(attachment_values)
             account_move.create_edi_document_from_attatchment(self.name)
-            #item.write({'imported': True})
+            item.write({'imported': True})
 
     def action_add_payment(self):
         # Buscar factura
@@ -447,7 +456,7 @@ class AccountEdiApiDownload(models.Model):
                     descripcion = concepto_element.get('Descripcion')
                     valor_unitario = concepto_element.get('ValorUnitario')
                     importe = concepto_element.get('Importe')
-
+                    descuento = concepto_element.get('Descuento')
 
                     taxes = []
                     taxes_ids = []
@@ -501,6 +510,7 @@ class AccountEdiApiDownload(models.Model):
                         'downloaded_invoice_id': False,
                         'product_rel': final_product.id if final_product else False,
                         'tax_id': taxes_ids if taxes_ids else False,
+                        'discount': -float(descuento) if descuento else 0.0,
                     }
                     conceptos_list.append(concepto_info)
                 return (conceptos_list, total_impuestos, total_retenciones)
@@ -530,8 +540,10 @@ class AccountEdiApiDownload(models.Model):
                 print("Error during request:", e)
                 return None     
             
-        xml_sat_ids = []
-
+        create_contact = self.env.company.l10n_mx_xml_download_automatic_contact_creation
+        api_key = self.env.company.l10n_mx_xml_download_api_key
+        print("Create Contact: "+str(create_contact))
+        print("API KEY: "+str(api_key))
         response = fetch_cfdi_data(self._get_default_vat(), self.date_start, self.date_end, self.cfdi_type, self.ingreso, self.egreso, self.pago, self.nomina, self.valido, self.cancelado, self.no_encontrado, self.traslado)
 
         if response:
@@ -548,32 +560,57 @@ class AccountEdiApiDownload(models.Model):
                 domain = [('name', '=', cfdi_infos.get('uuid'))]
                 if self.env['account.edi.downloaded.xml.sat'].search(domain, limit=1):
                     continue
-                attachment_vals = {
-                    'name': xml["uuid"] + ".xml",
-                    'datas': base64.b64encode(xml["xmlFile"].encode('utf-8')),
-                    'res_model': 'account.edi.downloaded.xml.sat',
-                    'type': 'binary',
-                    'mimetype': 'application/xml',
-                }
+                # attachment_vals = {
+                #     'name': xml["uuid"] + ".xml",
+                #     'datas': base64.b64encode(xml["xmlFile"].encode('utf-8')),
+                #     'res_model': 'account.edi.downloaded.xml.sat',
+                #     'type': 'binary',
+                #     'mimetype': 'application/xml',
+                # }
               
                 """ 'uuid', 'supplier_rfc', 'customer_rfc', 'amount_total', 'cfdi_node', 'usage', 'payment_method'
                 'bank_account', 'sello', 'sello_sat', 'cadena', 'certificate_number', 'certificate_sat_number'
                 'expedition', 'fiscal_regime', 'emission_date_str', 'stamp_date' """
+                
                 tax_regime = ""
+                rfc = ""
+                name = ""
+                zip = ""
                 # Buscar el partner
                 if(self.cfdi_type == 'emitidos'):
-                    partner = self.env['res.partner'].search([('vat', '=', cfdi_infos.get('customer_rfc'))], limit=1)
+                    rfc = cfdi_infos.get('customer_rfc')
+                    partner = self.env['res.partner'].search([('vat', '=', rfc)], limit=1)
                     tax_regime = root.find('.//cfdi:Receptor', namespaces={'cfdi': 'http://www.sat.gob.mx/cfd/4'}).get("RegimenFiscal")
+                    name = root.find('.//cfdi:Receptor', namespaces={'cfdi': 'http://www.sat.gob.mx/cfd/4'}).get("Nombre")
+                    zip = root.find('.//cfdi:Receptor', namespaces={'cfdi': 'http://www.sat.gob.mx/cfd/4'}).get("DomicilioFiscalReceptor")
                 else: 
-                    partner = self.env['res.partner'].search([('vat', '=', cfdi_infos.get('supplier_rfc'))], limit=1)
+                    rfc = cfdi_infos.get('supplier_rfc')
+                    partner = self.env['res.partner'].search([('vat', '=', rfc)], limit=1)
                     tax_regime = root.find('.//cfdi:Emisor', namespaces={'cfdi': 'http://www.sat.gob.mx/cfd/4'}).get("RegimenFiscal")
+                    name = root.find('.//cfdi:Emisor', namespaces={'cfdi': 'http://www.sat.gob.mx/cfd/4'}).get("Nombre")
+                    zip = cfdi_infos.get('expedition')
+
+                # Si no hay partner y en ajustes esta configurado para crear contacto, lo va a crear 
+                if not partner and create_contact: 
+                    partner = self.env['res.partner'].create({
+                        'vat':rfc,
+                        'name': name,
+                        'country_id':156, # ID de México
+                        'l10n_mx_edi_fiscal_regime':tax_regime,
+                        'zip':zip
+                    })
+
+                factura = None
+                factura = self.env['account.move'].search([('stored_sat_uuid','=',cfdi_infos.get('uuid'))], limit=1)
+                
                 vals = {
                     'name': cfdi_infos.get('uuid'),
                     'cfdi_type': self.cfdi_type,
                     'company_id': self.company_id.id,
+                    'invoice_id': factura.id if factura else None,
                     'partner_id': partner.id if partner else False,
                     'document_date': root.attrib.get('Fecha'),
-                    'state': 'not_imported',
+                    'state': factura.state if factura else 'not_imported',
                     'document_type': root.get('TipoDeComprobante'),
                     'payment_method': cfdi_infos.get('payment_method'),
                     'payment_method_sat': root.get('FormaPago'),
@@ -584,7 +621,8 @@ class AccountEdiApiDownload(models.Model):
                     'divisa':root.get('Moneda'),
                     'cfdi_usage': cfdi_infos.get('usage'),
                     'tax_regime': tax_regime,
-                    'batch_id':self.id
+                    'batch_id':self.id,
+                    'discount': -float(root.get("Descuento")) if root.get("Descuento") else None,
                 }
 
                 if root.get('TipoDeComprobante') == 'P':
@@ -598,16 +636,8 @@ class AccountEdiApiDownload(models.Model):
                 products, total_impuestos, total_retenciones = get_products(xml["xmlFile"])
                 vals['total_impuestos'] = total_impuestos
                 vals['total_retenciones'] = total_retenciones
+                
                 if products:
-                    """if root.get('Descuento') is not None:
-                        descuento = -float(root.get('Descuento'))
-                        products.append({
-                            'quantity': 1,
-                            'description': "DESCUENTO",
-                            'unit_value': descuento,
-                            'total_amount': descuento,
-                            'downloaded_invoice_id': False,
-                        })"""
                     if root.get('TipoDeComprobante') == 'P':
                         for product in products:
                             product['total_amount'] = float(monto_total_pagos)
@@ -627,9 +657,7 @@ class AccountEdiApiDownload(models.Model):
 
                     # Update the main record with the attachment ID
                     record.write({'attachment_id': attachment.id})
-                    
-                #xml_sat_ids.append((0, 0, vals))
-        self.write({'state': 'imported'}) #'xml_sat_ids': xml_sat_ids,
+        self.write({'state': 'imported'})
     
     def action_update(self): 
         self.action_download()
@@ -650,9 +678,9 @@ class DownloadedXmlSatProducts(models.Model):
     total_amount = fields.Float(string="Importe", required=True)
     product_rel = fields.Many2one('product.product', string="Producto Odoo")
     tax_id = fields.Many2many('account.tax', string="Impuestos")
+    discount = fields.Float(string="Descuento")
 
     downloaded_invoice_id = fields.Many2one(
         'account.edi.downloaded.xml.sat',
         string='Downloaded product ID',
         ondelete="cascade")
-    

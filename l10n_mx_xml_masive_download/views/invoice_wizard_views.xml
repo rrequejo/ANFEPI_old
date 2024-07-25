@@ -1,0 +1,26 @@
+<odoo>
+
+    <record id="view_invoice_wizard_form" model="ir.ui.view">
+        <field name="name">invoice.wizard.form</field>
+        <field name="model">invoice.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Select Invoice">
+                <group>
+                    <field name="invoice_id" />
+                </group>
+                <footer>
+                    <button string="Select" type="object" name="action_select_invoice" class="btn-primary"/>
+                    <button string="Close" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_open_invoice_wizard" model="ir.actions.act_window">
+        <field name="name">Invoice Wizard</field>
+        <field name="res_model">invoice.wizard</field>
+        <field name="view_mode">tree,form</field>
+        <field name="target">new</field>
+        <field name="view_id" ref="view_invoice_wizard_form"/>
+    </record>
+</odoo>

@@ -2,3 +2,4 @@ id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_account_edi_downloaded_xml_sat,access.account.edi.downloaded.xml.sat,model_account_edi_downloaded_xml_sat,account.group_account_user,1,1,1,1
 access_account_edi_api_download,access.account.edi.api.download,model_account_edi_api_download,account.group_account_user,1,1,1,1
 access_account_edi_downloaded_xml_sat_products,access.account.edi.downloaded.xml.sat.products,model_account_edi_downloaded_xml_sat_products,account.group_account_user,1,1,1,1
+access_invoice_wizard,access_invoice_wizard,model_invoice_wizard,base.group_user,1,1,1,0
