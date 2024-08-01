@@ -22,10 +22,10 @@ USO_CFDI  = [
     ("I02", "Mobiliario y equipo de oficina por inversiones"),
     ("I03", "Equipo de transporte"),
     ("I04", "Equipo de cómputo y accesorios"),    
-    ("105", "Dados, troqueles, moldes, matrices y herramental"),
-    ("106", "Comunicaciones telefónicas"),
-    ("107", "Comunicaciones satelitales"),
-    ("108", "Otra maquinaria y equipo"),
+    ("I05", "Dados, troqueles, moldes, matrices y herramental"),
+    ("I06", "Comunicaciones telefónicas"),
+    ("I07", "Comunicaciones satelitales"),
+    ("I08", "Otra maquinaria y equipo"),
     ("D01", "Honorarios médicos, dentales y gastos hospitalarios"),
     ("D02", "Gastos médicos por incapacidad o discapacidad"),
     ("D03", "Gastos funerales"),
@@ -412,7 +412,6 @@ class AccountEdiApiDownload(models.Model):
         Used to compare descriptions that have dates or numbers
         """
         def similar(a, b):
-            print()
             return SequenceMatcher(None, a, b).ratio()
         
         def _l10n_mx_edi_import_cfdi_get_tax_from_node(self, tax_node, is_withholding=False):
@@ -497,8 +496,6 @@ class AccountEdiApiDownload(models.Model):
                                 final_product=product.product_rel
                                 break
 
-                    
-                    
                     # Create a dictionary for each concepto and append it to the list
                     concepto_info = {
                         'sat_id':self.env['product.unspsc.code'].search([('code','=',clave_prod_serv)]).id,
@@ -542,8 +539,6 @@ class AccountEdiApiDownload(models.Model):
             
         create_contact = self.env.company.l10n_mx_xml_download_automatic_contact_creation
         api_key = self.env.company.l10n_mx_xml_download_api_key
-        print("Create Contact: "+str(create_contact))
-        print("API KEY: "+str(api_key))
         response = fetch_cfdi_data(self._get_default_vat(), self.date_start, self.date_end, self.cfdi_type, self.ingreso, self.egreso, self.pago, self.nomina, self.valido, self.cancelado, self.no_encontrado, self.traslado)
 
         if response:

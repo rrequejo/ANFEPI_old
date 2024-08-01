@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+        <!-- Pivot view for product variants-->
+        <record id="sat_conciliation_report_view_pivot" model="ir.ui.view">
+            <field name="name">sat.conciliation.report.view.pivot</field>
+            <field name="model">sat.conciliation.report</field>
+            <field name="arch" type="xml">
+                <pivot string="Reporte de Conciliacion">
+                    <field name="document_type" type="dimension" />
+                    <field name="total_odoo" type="measure" />
+                    <field name="total_sat" type="measure" />
+                    <field name="diferencia_uuid" type="measure" />
+                    <field name="diferencia_importe" type="measure" />
+                </pivot>
+            </field>
+        </record>
+
+        <record model="ir.actions.act_window"
+            id="account_edi_download_conciliation_report_action">
+            <field name="name">Reporte de Conciliacion SAT vs Odoo</field>
+            <field name="res_model">sat.conciliation.report</field>
+            <field name="view_mode">pivot</field>
+            <field name="view_id" ref="sat_conciliation_report_view_pivot"/>
+        </record>
+
+        <menuitem id="account_edi_download_conciliation_report_menu" 
+            parent="account.menu_finance_entries_actions" 
+            action="account_edi_download_conciliation_report_action" 
+            name="Reporte de Conciliacion" 
+            sequence="2"
+        />
+</odoo>
