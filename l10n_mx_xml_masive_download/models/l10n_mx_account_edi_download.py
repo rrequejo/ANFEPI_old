@@ -223,7 +223,6 @@ class DownloadedXmlSat(models.Model):
 
     def action_import_invoice(self):
         for item in self:
-            discountFlag = False
             ref = (self.serie + '/' if self.serie else '') + (self.folio if self.folio else '')
 
             account_move_dict = {
@@ -231,7 +230,6 @@ class DownloadedXmlSat(models.Model):
                 'ref': ref,
                 'invoice_date': item.document_date,
                 'date': item.document_date,
-                'move_type':'out_invoice' if self.cfdi_type == 'recividos' else 'in_invoice',
                 'move_type':'out_invoice' if self.cfdi_type == 'recividos' else 'in_invoice',
                 'partner_id': item.partner_id.id,
                 'company_id': item.company_id.id,

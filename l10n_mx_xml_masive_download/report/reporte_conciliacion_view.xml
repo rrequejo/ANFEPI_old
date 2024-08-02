@@ -11,7 +11,10 @@
                     <field name="total_sat" type="measure" />
                     <field name="diferencia_uuid" type="measure" />
                     <field name="diferencia_importe" type="measure" />
+                    <field name="start_date" type="filter" />
+                    <field name="end_date" type="filter" />
                 </pivot>
+
             </field>
         </record>
 
@@ -23,10 +26,5 @@
             <field name="view_id" ref="sat_conciliation_report_view_pivot"/>
         </record>
 
-        <menuitem id="account_edi_download_conciliation_report_menu" 
-            parent="account.menu_finance_entries_actions" 
-            action="account_edi_download_conciliation_report_action" 
-            name="Reporte de Conciliacion" 
-            sequence="2"
-        />
+
 </odoo>
