@@ -5,13 +5,7 @@ class ReporteConciliacion(models.Model):
     _name = 'sat.conciliation.report'
     _description = "Reporte de conciliacion sat vs odoo"
  
-    document_type = fields.Selection([
-        ('I', 'Ingreso'),
-        ('E', 'Egreso'),
-        ('T', 'Traslado'),
-        ('N', 'Nomina'),
-        ('P', 'Pago'),
-    ], string='Tipo de Documento')
+    document_type = fields.Char(string='Tipo de Documento')
     total_odoo = fields.Integer(string="Total de UUID en el sistema")
     total_sat = fields.Integer(string="Total de UUID en el SAT")
     diferencia_uuid = fields.Integer(string="Diferencia de UUID's")
@@ -26,79 +20,208 @@ class ReporteConciliacion(models.Model):
             end_date = date.today()   
 
         # Erase previous report 
+        report = []
         self.search([]).unlink()  
-
-        # Fetch SAT DATA
-
-        sat_records = self.env['account.edi.downloaded.xml.sat'].search([
-            ('document_date', '>=', start_date),
-            ('document_date', '<=', end_date),
-            #('cfdi_type','=','emitidos')
-        ])
-
-        grouped_sat_data = {}
-        for item in sat_records:
-            doc_type = item["document_type"]
-            if doc_type not in grouped_sat_data:
-                grouped_sat_data[doc_type] = []
-            grouped_sat_data[doc_type].append({'total_amount':item.amount_total})
-
-        # Fetch Odoo Data
-
-        odoo_records_I = self.env['account.move'].search([
-            ('invoice_date', '>=', start_date),
-            ('invoice_date', '<=', end_date),
-            ('move_type','=','in_invoice')
-        ])
-
-        odoo_records_E = self.env['account.move'].search([
-            ('invoice_date', '>=', start_date),
-            ('invoice_date', '<=', end_date),
-            ('move_type','=','out_invoice')
-        ])
-        
-        odoo_records_P = self.env['account.payment'].search([
-            ('date', '>=', start_date),
-            ('date', '<=', end_date),
-        ])
-
-        print("Odoo Records: "+str(len(odoo_records_I)))
-
         report_model = self.env['sat.conciliation.report']
 
-        for doc_type, items in grouped_sat_data.items():
-            total_sat_items = 0
-            total_sat_amount = 0
-            total_odoo_items = 0
-            total_odoo_amount = 0
-            for item in items:
-                total_sat_items += 1
-                total_sat_amount += item['total_amount']
+        # =======================================================================
+        #
+        # 1. Facturas de Cliente Emitidas de Ingreso
+        #
+        # =======================================================================
 
-            if doc_type == 'I':
-                for item in odoo_records_I:
-                    total_odoo_amount += item.amount_total_signed
-                    total_odoo_items += 1
+        in_odoo = self.env['account.move'].search([
+            ('state', '=', 'posted'),
+            ('move_type','=','out_invoice'),
+            ('l10n_mx_edi_cfdi_sat_state','=','valid'),
+            ('invoice_date','>=',start_date),
+            ('invoice_date','<=',end_date),
+        ])
 
-            if doc_type == 'E':
-                for item in odoo_records_E:
-                    total_odoo_amount += item.amount_total_signed
-                    total_odoo_items += 1
+        in_sat = self.env['account.edi.downloaded.xml.sat'].search([
+            ('cfdi_type','=','emitidos'),
+            ('state','!=','ignored'),
+            ('document_type','=','I'),
+            ('document_date','>=',start_date),
+            ('document_date','<=',end_date),
+        ])
 
-            if doc_type == 'P':
-                for item in odoo_records_P:
-                    total_odoo_amount += item.amount_company_currency_signed
-                    total_odoo_items += 1
+        in_odoo_sum = sum(in_odoo.mapped('amount_total_signed'))
+        in_sat_sum = sum(in_sat.mapped('amount_total'))
+        
+        report.append({
+            'document_type':"Facturas Cliente: Emitidas",
+            'total_odoo':len(in_odoo),
+            'total_sat':len(in_sat),
+            'diferencia_uuid':len(in_odoo) - len(in_sat),
+            'diferencia_importe':in_odoo_sum - in_sat_sum,
+        })
 
-            report_model.create({
-                'document_type': doc_type,
-                'total_odoo': total_odoo_items,
-                'total_sat': total_sat_items,
-                'diferencia_uuid': total_odoo_items - total_sat_items,
-                'diferencia_importe': total_odoo_amount - total_sat_amount
-            })
+        # =======================================================================
+        #
+        # 2. Notas de Credito: Emitidas de Egreso
+        #
+        # =======================================================================
 
+        in_odoo = self.env['account.move'].search([
+            ('state', '=', 'posted'),
+            ('move_type','=','out_refund'),
+            ('l10n_mx_edi_cfdi_sat_state','=','valid'),
+            ('invoice_date','>=',start_date),
+            ('invoice_date','<=',end_date),
+        ])
 
+        in_sat = self.env['account.edi.downloaded.xml.sat'].search([
+            ('cfdi_type','=','emitidos'),
+            ('state','!=','ignored'),
+            ('document_type','=','E'),
+            ('document_date','>=',start_date),
+            ('document_date','<=',end_date),
+        ])
+
+        in_odoo_sum = sum(in_odoo.mapped('amount_total_signed'))
+        in_sat_sum = sum(in_sat.mapped('amount_total'))
+        
+        report.append({
+            'document_type':"Notas de Credito: Emitidas",
+            'total_odoo':len(in_odoo),
+            'total_sat':len(in_sat),
+            'diferencia_uuid':len(in_odoo) - len(in_sat),
+            'diferencia_importe':in_odoo_sum - in_sat_sum,
+        })
+
+        # =======================================================================
+        #
+        # 3. Facturas de Proveedor Recibidas de Ingreso
+        #
+        # =======================================================================
+
+        in_odoo = self.env['account.move'].search([
+            ('state', '=', 'posted'),
+            ('move_type','=','in_invoice'),
+            ('l10n_mx_edi_cfdi_sat_state','=','valid'),
+            ('invoice_date','>=',start_date),
+            ('invoice_date','<=',end_date),
+        ])
+
+        in_sat = self.env['account.edi.downloaded.xml.sat'].search([
+            ('cfdi_type','=','recibidos'),
+            ('state','!=','ignored'),
+            ('document_type','=','I'),
+            ('document_date','>=',start_date),
+            ('document_date','<=',end_date),
+        ])
+
+        in_odoo_sum = sum(in_odoo.mapped('amount_total_signed'))
+        in_sat_sum = sum(in_sat.mapped('amount_total'))
+        
+        report.append({
+            'document_type':"Facturas de Proveedor: Recibidas",
+            'total_odoo':len(in_odoo),
+            'total_sat':len(in_sat),
+            'diferencia_uuid':len(in_odoo) - len(in_sat),
+            'diferencia_importe':in_odoo_sum - in_sat_sum,
+        })
+
+        # =======================================================================
+        #
+        # 4. Notas de Credito: Emitidas de Egreso
+        #
+        # =======================================================================
+
+        in_odoo = self.env['account.move'].search([
+            ('state', '=', 'posted'),
+            ('move_type','=','in_refund'),
+            ('l10n_mx_edi_cfdi_sat_state','=','valid'),
+            ('invoice_date','>=',start_date),
+            ('invoice_date','<=',end_date),
+        ])
+
+        in_sat = self.env['account.edi.downloaded.xml.sat'].search([
+            ('cfdi_type','=','recibidos'),
+            ('state','!=','ignored'),
+            ('document_type','=','E'),
+            ('document_date','>=',start_date),
+            ('document_date','<=',end_date),
+        ])
+
+        in_odoo_sum = sum(in_odoo.mapped('amount_total_signed'))
+        in_sat_sum = sum(in_sat.mapped('amount_total'))
+        
+        report.append({
+            'document_type':"Notas de Credito Proveedor: Recibidas",
+            'total_odoo':len(in_odoo),
+            'total_sat':len(in_sat),
+            'diferencia_uuid':len(in_odoo) - len(in_sat),
+            'diferencia_importe':in_odoo_sum - in_sat_sum,
+        })
+        
+        # =======================================================================
+        #
+        # 5. Complemento de Pago Emitidos
+        #
+        # =======================================================================
+
+        in_odoo = self.env['account.payment'].search([
+            ('state', '=', 'posted'),
+            ('payment_type','=','outbound'),
+            ('date','>=',start_date),
+            ('date','<=',end_date),
+        ])
+
+        in_sat = self.env['account.edi.downloaded.xml.sat'].search([
+            ('cfdi_type','=','emitidos'),
+            ('state','!=','ignored'),
+            ('document_type','=','P'),
+            ('document_date','>=',start_date),
+            ('document_date','<=',end_date),
+        ])
+
+        in_odoo_sum = sum(in_odoo.mapped('amount_company_currency_signed'))
+        in_sat_sum = sum(in_sat.mapped('amount_total'))
+
+        report.append({
+            'document_type':"Complemento de Pago Emitidos",
+            'total_odoo':len(in_odoo),
+            'total_sat':len(in_sat),
+            'diferencia_uuid':len(in_odoo) - len(in_sat),
+            'diferencia_importe':in_odoo_sum - in_sat_sum,
+        })
+          
+
+        # =======================================================================
+        #
+        # 6. Complemento de Pago Recibidos
+        #
+        # =======================================================================
+
+        in_odoo = self.env['account.payment'].search([
+            ('state', '=', 'posted'),
+            ('payment_type','=','inbound'),
+            ('date','>=',start_date),
+            ('date','<=',end_date),
+        ])
+
+        in_sat = self.env['account.edi.downloaded.xml.sat'].search([
+            ('cfdi_type','=','recibidos'),
+            ('state','!=','ignored'),
+            ('document_type','=','P'),
+            ('document_date','>=',start_date),
+            ('document_date','<=',end_date),
+        ])
+
+        in_odoo_sum = sum(in_odoo.mapped('amount_company_currency_signed'))
+        in_sat_sum = sum(in_sat.mapped('amount_total'))
+
+        report.append({
+            'document_type':"Complemento de Pago Recibidos",
+            'total_odoo':len(in_odoo),
+            'total_sat':len(in_sat),
+            'diferencia_uuid':len(in_odoo) - len(in_sat),
+            'diferencia_importe':in_odoo_sum - in_sat_sum,
+        })
+
+        report_model.create(report)
 
         action = self.env.ref('l10n_mx_xml_masive_download.account_edi_download_conciliation_report_action')
         return {
