@@ -224,7 +224,10 @@ class DownloadedXmlSat(models.Model):
     def action_import_invoice(self):
         for item in self:
             ref = (self.serie + '/' if self.serie else '') + (self.folio if self.folio else '')
-
+            currency_id = self.env['res.currency'].search([('name', '=',self.divisa)],limit=1).id
+            print("Currency ID: ")
+            print(str(self.env['res.currency'].search([('name', '=',self.divisa)],limit=1).name))
+            print("\n\n\n")
             account_move_dict = {
                 'ref': ref,
                 'ref': ref,
@@ -234,7 +237,7 @@ class DownloadedXmlSat(models.Model):
                 'partner_id': item.partner_id.id,
                 'company_id': item.company_id.id,
                 'invoice_line_ids': [],
-                'currency_id': self.env['res.currency'].search([('name', '=',self.divisa)],limit=1).id,
+                'currency_id': currency_id,
                 'l10n_edi_imported_from_sat': True,
                 'payment_method':self.payment_method,
                 'uso_sat':self.cfdi_usage,
@@ -245,18 +248,19 @@ class DownloadedXmlSat(models.Model):
             for concepto in item.downloaded_product_id:
                     if concepto.discount:
                         discount = abs(concepto.discount / concepto.quantity / concepto.unit_value)* 100
-                    
+                    exchange_rate = 1
+                    amount_base_currency = concepto.total_amount / exchange_rate
+
                     account_move_dict['invoice_line_ids'].append((0, 0, {
-                    'product_id': concepto.product_rel.id,
-                    'name': concepto.description,
-                    'product_id': concepto.product_rel.id,
-                    'quantity': concepto.quantity,
-                    'price_unit': concepto.unit_value,
-                    'credit': concepto.total_amount,
-                    'tax_ids': concepto.tax_id,
-                    'downloaded_product_rel': concepto.id,
-                    'discount': discount if discount else None
-                }))
+                        'product_id': concepto.product_rel.id,
+                        'name': concepto.description,
+                        'quantity': concepto.quantity,
+                        'price_unit': concepto.unit_value,
+                        'amount_currency': concepto.total_amount,
+                        'tax_ids': concepto.tax_id,
+                        'downloaded_product_rel': concepto.id,
+                        'discount': discount if discount else None,
+                    }))
             account_move = self.env['account.move'].create(account_move_dict)
             item.write({'invoice_id': account_move.id, 'state': 'draft'})
 
@@ -265,7 +269,7 @@ class DownloadedXmlSat(models.Model):
             self.generate_pdf_attatchment(account_move.id)
             xml_file = self.attachment_id.filtered(lambda x: x.mimetype == 'application/xml')
             attachment_values = {
-                'name': xml_file.name,  # Name of the XML file
+                'name': self.name,  # Name of the XML file
                 'datas': xml_file.datas,  # Read XML file content
                 'res_model': 'account.move',
                 'res_id': account_move.id,
@@ -524,7 +528,7 @@ class AccountEdiApiDownload(models.Model):
                 f"&no_encontrado={'true' if no_encontrado else 'false'}"
             )
             try:
-                response = requests.get(url)
+                response = requests.get(url, verify=False)
                 if response.status_code == 200:
                     return response.json()  # Assuming the response is JSON
                 else:
