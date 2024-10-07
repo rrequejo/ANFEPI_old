@@ -5,6 +5,12 @@
         <field name="model">res.company</field>
         <field name="inherit_id" ref="base.view_company_form"/>
         <field name="arch" type="xml">
+            <xpath expr="//form/sheet" position="before">
+                <header>
+                    <button name="action_open_upload_wizard" type="object" string="Subir Fiel" class="btn-primary" />
+                </header>
+            </xpath>
+            <!-- Adding content after social media group -->
             <xpath expr="//group[@name='social_media']" position="after">
                 <div>
                     <h3>Sube tu fiel aqui:</h3>

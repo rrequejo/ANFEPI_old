@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_upload_fiel_wizard_form" model="ir.ui.view">
+        <field name="name">upload.fiel.wizard.form</field>
+        <field name="model">upload.fiel.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Subir Fiel al Sistema">
+                <group>
+                    <field name="company_name" readonly="1"/>
+                    <field name="vat_id" readonly="1"/>
+                    <field name="cer_filename" invisible="1"/>
+                    <field name="cer_file" filename="cer_filename"/>
+                    <field name="key_filename" invisible="1"/>
+                    <field name="key_file" filename="key_filename"/>
+                    <field name="password" password="True"/>
+                </group>
+                <footer>
+                    <button string="Upload" type="object" name="action_upload_files" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action to open the wizard -->
+    <record id="action_upload_file_wizard" model="ir.actions.act_window">
+        <field name="name">Upload Fiel</field>
+        <field name="res_model">upload.fiel.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>
