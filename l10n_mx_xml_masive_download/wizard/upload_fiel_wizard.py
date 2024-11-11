@@ -9,13 +9,13 @@ class UploadFileWizard(models.TransientModel):
     _name = 'upload.fiel.wizard'
     _description = 'Wizard to upload files'
 
-    company_name = fields.Char(string='Company Name', readonly=True)
-    vat_id = fields.Char(string='VAT ID', readonly=True)
-    cer_file = fields.Binary(string='CER File', required=True)
+    company_name = fields.Char(string='Nombre', readonly=True)
+    vat_id = fields.Char(string='RFC', readonly=True)
+    cer_file = fields.Binary(string='Archivo .cer', required=True)
     cer_filename = fields.Char(string='CER File Name')
-    key_file = fields.Binary(string='KEY File', required=True)
+    key_file = fields.Binary(string='Archivo .key', required=True)
     key_filename = fields.Char(string='KEY File Name')
-    password = fields.Char(string='Password', required=True)
+    password = fields.Char(string='Contraseña', required=True)
 
     @api.model
     def default_get(self, fields_list):
@@ -31,7 +31,8 @@ class UploadFileWizard(models.TransientModel):
     
 
     def action_upload_files(self):
-
+        #base_url ='http://127.0.0.1:5000/upload-documents'
+        base_url = 'https://xmlsat.anfepi.com/upload-documents'
 
         
 
@@ -48,16 +49,21 @@ class UploadFileWizard(models.TransientModel):
         # Send POST request to the Flask server
         try:
             response = requests.post(
-                'https://xmlsat.anfepi.com/upload-documents',
+                base_url,
                 data=data,
                 files=files
             )
             response.raise_for_status()  # Check if the request was successful
         except requests.exceptions.RequestException as e:
             raise UserError(f"Error sending files: {e}")
-
         # Handle the server response
         if response.status_code == 200:
+            print("Response: ")
+            response = response.json()
+            if response['apiKey']:
+                self.env.company.write({
+                    'l10n_mx_xml_download_api_key':response['apiKey']
+                })
             return {'type': 'ir.actions.act_window_close'}
         else:
             raise UserError("Error al subir la información, verifique que este correcta ")

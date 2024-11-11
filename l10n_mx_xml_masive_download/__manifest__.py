@@ -15,6 +15,7 @@ XML Masive Download from SAT WebService.
     'data': [
         'security/ir.model.access.csv',
         'security/groups.xml',
+        'data/ir_cron.xml',
         'views/l10n_mx_edi_view.xml',
         'views/res_company_view.xml',
         'views/account_move_view.xml',

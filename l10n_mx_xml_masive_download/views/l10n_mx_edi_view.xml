@@ -24,6 +24,11 @@
                     <field name="document_date" optional="show"/>
                     <field name="sub_total" optional="show"/>
                     <field name="amount_total" optional="show"/>
+                    <field name="sat_state" optional="show"  widget="badge" 
+                        decoration-info="sat_state == 'No Encontrado'"
+                        decoration-success="sat_state == 'Vigente'"
+                        decoration-warning="sat_state == 'Cancelado'"
+                    />
                 </tree>
 
             </field>
@@ -53,6 +58,8 @@
                         <button string="Importar Factura" name="action_import_invoice" type="object" class="oe_highlight" invisible="imported==True or document_type=='P'"/> 
                         <button string="Adjuntar Complemento" name="action_add_payment" type="object" class="oe_highlight" invisible="document_type!='P'"/> 
                         <button string="Relacionar Manualmente" name="action_wizard_relate"  class="oe_highlight" type="object" invisible="imported==True or document_type=='P'"/>
+                        <button string="Ignorar Factura" name="action_ignor" type="object" invisible="state=='ignored'"/> 
+                        <button string="Actualizar Estado SAT" name="action_fetch_sat_status" type="object" invisible="state=='ignored'"/> 
                         <field name="state" widget="statusbar" statusbar_visible="not_imported,draft,posted,cancel,ignored,error_relating"/>
                     </header>
                     <sheet>
@@ -66,6 +73,7 @@
                                 <field name="document_type" invisible="1"/> 
                                 <field name="imported" invisible="1"/>
                                 <field name="name" readonly="1"/>
+                                <field name="sat_state" readonly="1"/>
                                 <field name="company_id" readonly="1"/>
                                 <field name="partner_id"/>
                                 <field name="cfdi_type" readonly="1" />
