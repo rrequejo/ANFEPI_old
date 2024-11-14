@@ -10,13 +10,6 @@
                     <button name="action_open_upload_wizard" type="object" string="Subir Fiel" class="btn-primary" />
                 </header>
             </xpath>
-            <!-- Adding content after social media group -->
-            <xpath expr="//group[@name='social_media']" position="after">
-                <div>
-                    <h3>Sube tu fiel aqui:</h3>
-                    <a href="https://xmlsat.anfepi.com" target="_blank">Click aqui</a>
-                </div>
-            </xpath>
         </field>
     </record>
 </odoo>

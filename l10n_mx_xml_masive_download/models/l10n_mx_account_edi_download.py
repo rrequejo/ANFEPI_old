@@ -1,17 +1,18 @@
 # -*- coding: utf-8 -*-
-from odoo import api, fields, models, _ # type: ignore
+from odoo import api, fields, models, tools, _ # type: ignore
 from odoo.exceptions import UserError # type: ignore
 from lxml import etree # type: ignore
 from lxml.objectify import fromstring # type: ignore
 import base64
 import requests # type: ignore
-
+import hashlib
 from odoo.addons.l10n_mx_edi.models.l10n_mx_edi_document import ( # type: ignore
     CFDI_CODE_TO_TAX_TYPE,
 )
 from io import BytesIO
 import xml.etree.ElementTree as ET
 from difflib import SequenceMatcher 
+from datetime import date, timedelta
 
 USO_CFDI  = [
     ("G01", "Adquisición de mercancías"),
@@ -131,10 +132,11 @@ class DownloadedXmlSat(models.Model):
         default='draft',
     )
     sat_state = fields.Selection([
-        ('Valido', 'Valido'),
+        ('Vigente', 'Vigente'),
         ('Cancelado','Cancelado'),
-        ('No Encontrado', 'No encontrado')
-    ])
+        ('No Encontrado', 'No encontrado'),
+        ('Sin Definir', 'Sin Definir')
+    ], string="Estatus SAT", default='Sin Definir')
     payment_method = fields.Selection([('PPD','PPD'),('PUE','PUE')], string='Metodo de Pago')
     sub_total = fields.Float(string="Sub Total", required=True)
     amount_total = fields.Float(string="Total", required=True)
@@ -342,6 +344,78 @@ class DownloadedXmlSat(models.Model):
     def action_ignor(self):
         self.state = 'ignored'
 
+    def _fetch_sat_status(self, supplier_rfc, customer_rfc, total, uuid):
+        url = 'https://consultaqr.facturaelectronica.sat.gob.mx/ConsultaCFDIService.svc?wsdl'
+        headers = {
+            'SOAPAction': 'http://tempuri.org/IConsultaCFDIService/Consulta',
+            'Content-Type': 'text/xml; charset=utf-8',
+        }
+        params = f'<![CDATA[?id={uuid or ""}' \
+                 f'&re={tools.html_escape(supplier_rfc or "")}' \
+                 f'&rr={tools.html_escape(customer_rfc or "")}' \
+                 f'&tt={total or 0.0}]]>'
+        envelope = f"""<?xml version="1.0" encoding="UTF-8"?>
+            <SOAP-ENV:Envelope
+                xmlns:ns0="http://tempuri.org/"
+                xmlns:ns1="http://schemas.xmlsoap.org/soap/envelope/"
+                xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
+                <SOAP-ENV:Header/>
+                <ns1:Body>
+                    <ns0:Consulta>
+                        <ns0:expresionImpresa>{params}</ns0:expresionImpresa>
+                    </ns0:Consulta>
+                </ns1:Body>
+            </SOAP-ENV:Envelope>
+        """
+        namespace = {'a': 'http://schemas.datacontract.org/2004/07/Sat.Cfdi.Negocio.ConsultaCfdi.Servicio'}
+
+        try:
+            soap_xml = requests.post(url, data=envelope, headers=headers, timeout=35)
+            response = etree.fromstring(soap_xml.text)
+            fetched_status = response.xpath('//a:Estado', namespaces=namespace)
+            fetched_state = fetched_status[0].text if fetched_status else None
+        except Exception as e:
+            return {
+                'error': _("Failure during update of the SAT status: %s", str(e)),
+                'value': 'error',
+            }
+        if fetched_state == 'Vigente':
+            self.sat_state = 'Vigente'
+        elif fetched_state == 'Cancelado':
+            self.sat_state = 'Cancelado'
+        elif fetched_state == 'No Encontrado':
+            self.sat_state = 'No Encontrado'
+        else:
+            self.sat_state = 'Sin Definir'
+
+    def action_fetch_sat_status(self):
+        if self.cfdi_type == 'emitidos':
+            self._fetch_sat_status(self.company_id.vat, self.partner_id.vat, self.amount_total, self.name)
+        else: 
+            self._fetch_sat_status(self.partner_id.vat, self.company_id.vat, self.amount_total, self.name)
+
+    def cron_fetch_sat_status(self):
+        # Calculate the start and end dates for the 31-day range
+        start_date = date.today() - timedelta(days=31)
+        end_date = date.today()
+
+        # Convert the dates to string format (YYYY-MM-DD)
+        start_date_str = fields.Date.to_string(start_date)
+        end_date_str = fields.Date.to_string(end_date)
+        print("\n\n\n")
+        print(start_date_str)
+        print(end_date_str)
+
+        # Modify the search domain to exclude 'Cancelado' and limit to the last 31 days
+        records = self.env['account.edi.downloaded.xml.sat'].search([
+            ('sat_state', '!=', 'Cancelado'),
+        ])
+        for record in records:
+            if self.cfdi_type == 'emitidos':
+                record._fetch_sat_status(record.company_id.vat, record.partner_id.vat, record.amount_total, record.name)
+            else: 
+                record._fetch_sat_status(record.partner_id.vat, record.company_id.vat, record.amount_total, record.name)
     
 class AccountEdiApiDownload(models.Model):
     _name = 'account.edi.api.download'
@@ -517,8 +591,20 @@ class AccountEdiApiDownload(models.Model):
         def fetch_cfdi_data(RFC, startDate, endDate, xml_type, ingreso, egreso, pago, nomina, valido, cancelado, no_encontrado, traslado):
             #base_url ='http://127.0.0.1:5000/get-cfdis'
             base_url = 'https://xmlsat.anfepi.com/get-cfdis'
+            company = self.env['res.company'].search([('id', '=', self.env.company.id)], limit=1)
+            api_key = company.l10n_mx_xml_download_api_key
+            hashed_api_key = ''
+            if api_key:
+                print("\n\n\n")
+                hashed_api_key = hashlib.sha512(api_key.encode()).hexdigest()
+                print(api_key)
+                print(hashed_api_key)
+
+                #raise UserError(f"API KEY: {api_key} \nHASHED APIKEY: {hashed_api_key}")
+    
+
             url = (
-                f"{base_url}?RFC={RFC}&startDate={startDate}&endDate={endDate}&xml_type={xml_type}"
+                f"{base_url}?RFC={RFC}&startDate={startDate}&endDate={endDate}&xml_type={xml_type}&api_key={hashed_api_key}"
                 f"&ingreso={'true' if ingreso else 'false'}"
                 f"&egreso={'true' if egreso else 'false'}"
                 f"&pago={'true' if pago else 'false'}"
@@ -526,6 +612,7 @@ class AccountEdiApiDownload(models.Model):
                 f"&traslado={'true' if traslado else 'false'}"
                 f"&valido={'true' if valido else 'false'}"
                 f"&cancelado={'true' if cancelado else 'false'}"
+                f"&no_encontrado={'true' if no_encontrado else 'false'}"
                 f"&no_encontrado={'true' if no_encontrado else 'false'}"
             )
             try:
@@ -540,11 +627,16 @@ class AccountEdiApiDownload(models.Model):
                 print("Error during request:", e)
                 return None     
             
+        # Create Batch Name
+        start_date_str = self.date_start.strftime('%d-%b-%Y')
+        end_date_str = self.date_end.strftime('%d-%b-%Y')
+        self.write({'name': f"{self.cfdi_type} ({start_date_str} - {end_date_str})"})
+        
         create_contact = self.env.company.l10n_mx_xml_download_automatic_contact_creation
-        api_key = self.env.company.l10n_mx_xml_download_api_key
         response = fetch_cfdi_data(self._get_default_vat(), self.date_start, self.date_end, self.cfdi_type, self.ingreso, self.egreso, self.pago, self.nomina, self.valido, self.cancelado, self.no_encontrado, self.traslado)
 
         if response:
+            print(response)
             for xml in response["xmls"]:
                 try:
                     cfdi_node = fromstring(xml["xmlFile"])
@@ -558,13 +650,6 @@ class AccountEdiApiDownload(models.Model):
                 domain = [('name', '=', cfdi_infos.get('uuid'))]
                 if self.env['account.edi.downloaded.xml.sat'].search(domain, limit=1):
                     continue
-                # attachment_vals = {
-                #     'name': xml["uuid"] + ".xml",
-                #     'datas': base64.b64encode(xml["xmlFile"].encode('utf-8')),
-                #     'res_model': 'account.edi.downloaded.xml.sat',
-                #     'type': 'binary',
-                #     'mimetype': 'application/xml',
-                # }
               
                 """ 'uuid', 'supplier_rfc', 'customer_rfc', 'amount_total', 'cfdi_node', 'usage', 'payment_method'
                 'bank_account', 'sello', 'sello_sat', 'cadena', 'certificate_number', 'certificate_sat_number'
@@ -617,6 +702,7 @@ class AccountEdiApiDownload(models.Model):
                     'serie':root.get('Serie'),
                     'folio':root.get('Folio'),
                     'divisa':root.get('Moneda'),
+                    'sat_state':xml['state'],
                     'cfdi_usage': cfdi_infos.get('usage'),
                     'tax_regime': tax_regime,
                     'batch_id':self.id,
@@ -656,7 +742,7 @@ class AccountEdiApiDownload(models.Model):
                     # Update the main record with the attachment ID
                     record.write({'attachment_id': attachment.id})
         self.write({'state': 'imported'})
-    
+
     def action_update(self): 
         self.action_download()
         self.write({

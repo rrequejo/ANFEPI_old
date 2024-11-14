@@ -1,0 +1,21 @@
+<?xml version="1.0" ?>
+<odoo>
+    <data>
+
+        <record id="ir_cron_update_sat_state" model="ir.cron">
+            <field name="name">Actualización automatica de estado sat</field>
+            <field name="model_id" ref="model_account_edi_downloaded_xml_sat"/>
+            <field name="state">code</field>
+            <field name="code">
+    env['account.edi.downloaded.xml.sat'].cron_fetch_sat_status()
+            </field>
+            <field name="user_id" ref="base.user_admin"/>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="numbercall">-1</field>
+            <field name="priority">8</field>
+            <field name="doall" eval="False"/>
+            <field name="nextcall" eval="(DateTime.now() + timedelta(days=1)).strftime('%Y-%m-%d 22:00:00')"/>
+        </record>
+     </data>
+</odoo>

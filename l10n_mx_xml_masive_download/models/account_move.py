@@ -39,7 +39,6 @@ class AccountMove(models.Model):
         compute='_get_uuid_from_xml_attachment', 
         string="CFDI UUID", 
         store=True, 
-        #default=lambda self: self._get_default_uuid_from_xml_attachment()
         )
     xml_imported_id = fields.Many2one('account.edi.downloaded.xml.sat', string="Downloaded XML")
 
