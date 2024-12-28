@@ -1,4 +1,3 @@
-
 <odoo>
     <!-- Creación de la secuencia 'IN' -->
     <record id="seq_purchase_in" model="ir.sequence">
@@ -25,7 +24,7 @@
     <record id="rule_purchase_importaciones" model="ir.rule">
         <field name="name">Ver Órdenes de Importaciones</field>
         <field name="model_id" ref="purchase.model_purchase_order" />
-        <field name="domain_force">[('x_studio_tipo_de_orden', 'in', ['importacion', 'nacional'])]</field>
+        <field name="domain_force">[('tipo_de_orden', 'in', ['importacion', 'nacional'])]</field>
         <field name="groups" eval="[(4, ref('purchase_order_sequence.group_purchase_importaciones'))]" />
     </record>
 
@@ -33,7 +32,7 @@
     <record id="rule_purchase_indirectos" model="ir.rule">
         <field name="name">Ver Órdenes de Indirectos</field>
         <field name="model_id" ref="purchase.model_purchase_order" />
-        <field name="domain_force">[('x_studio_tipo_de_orden', '=', 'indirectos')]</field>
+        <field name="domain_force">[('tipo_de_orden', '=', 'indirectos')]</field>
         <field name="groups" eval="[(4, ref('purchase_order_sequence.group_purchase_indirectos'))]" />
     </record>
 </odoo>
