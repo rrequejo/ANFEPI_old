@@ -1,0 +1,17 @@
+<odoo>
+    <!-- Regla de acceso para Importaciones -->
+    <record id="rule_purchase_importaciones" model="ir.rule">
+        <field name="name">Ver Órdenes de Importaciones y Nacionales</field>
+        <field name="model_id" ref="purchase.model_purchase_order" />
+        <field name="domain_force">[('tipo_de_orden', 'in', ['importacion', 'nacional'])]</field>
+        <field name="groups" eval="[(4, ref('purchase_order_sequence.group_purchase_importaciones'))]" />
+    </record>
+
+    <!-- Regla de acceso para Indirectos -->
+    <record id="rule_purchase_indirectos" model="ir.rule">
+        <field name="name">Ver Órdenes de Indirectos</field>
+        <field name="model_id" ref="purchase.model_purchase_order" />
+        <field name="domain_force">[('tipo_de_orden', '=', 'indirectos')]</field>
+        <field name="groups" eval="[(4, ref('purchase_order_sequence.group_purchase_indirectos'))]" />
+    </record>
+</odoo>

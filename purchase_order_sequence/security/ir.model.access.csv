@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_purchase_importaciones,Access Importaciones,purchase.model_purchase_order,purchase_order_sequence.group_purchase_importaciones,1,0,0,0
+access_purchase_indirectos,Access Indirectos,purchase.model_purchase_order,purchase_order_sequence.group_purchase_indirectos,1,0,0,0

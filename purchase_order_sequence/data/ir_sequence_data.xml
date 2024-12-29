@@ -1,0 +1,10 @@
+<odoo>
+    <!-- Creación de la secuencia 'IN' -->
+    <record id="seq_purchase_in" model="ir.sequence">
+        <field name="name">Órdenes de Compra Indirectos</field>
+        <field name="code">IN</field>
+        <field name="padding">5</field>
+        <field name="prefix">IN</field>
+        <field name="active" eval="True"/>
+    </record>
+</odoo>

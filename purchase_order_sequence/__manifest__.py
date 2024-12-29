@@ -8,8 +8,11 @@
     'summary': 'Assigns different sequences to purchase orders based on their type and configures user groups.',
     'depends': ['purchase'],
     'data': [
-        'data/groups_and_rules.xml',  # Archivo de datos para grupos y reglas
+        'security/ir.model.access.csv',
+        'security/rules.xml',
         'views/purchase_order_views.xml',
+        'data/ir_sequence_data.xml',
+        'data/groups_and_rules.xml',
     ],
     'installable': True,
     'application': False,

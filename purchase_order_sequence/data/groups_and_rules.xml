@@ -1,38 +1,14 @@
 <odoo>
-    <!-- Creación de la secuencia 'IN' -->
-    <record id="seq_purchase_in" model="ir.sequence">
-        <field name="name">Ordenes de Compra Indirectos</field>
-        <field name="code">IN</field>
-        <field name="padding">5</field>
-        <field name="prefix">IN</field>
-        <field name="active" eval="True"/>
-    </record>
-    
     <!-- Grupo de usuarios para Importaciones -->
     <record id="group_purchase_importaciones" model="res.groups">
-        <field name="name">Importaciones</field>
+        <field name="name">Ver órdenes de compra de Importación y Nacionales</field>
         <field name="category_id" ref="base.module_category_purchase_management" />
     </record>
 
     <!-- Grupo de usuarios para Indirectos -->
     <record id="group_purchase_indirectos" model="res.groups">
-        <field name="name">Indirectos</field>
+        <field name="name">Ver órdenes de compra de Indirectos</field>
         <field name="category_id" ref="base.module_category_purchase_management" />
     </record>
-
-    <!-- Regla de acceso para el grupo Importaciones -->
-    <record id="rule_purchase_importaciones" model="ir.rule">
-        <field name="name">Ver Órdenes de Importaciones</field>
-        <field name="model_id" ref="purchase.model_purchase_order" />
-        <field name="domain_force">[('tipo_de_orden', 'in', ['importacion', 'nacional'])]</field>
-        <field name="groups" eval="[(4, ref('purchase_order_sequence.group_purchase_importaciones'))]" />
-    </record>
-
-    <!-- Regla de acceso para el grupo Indirectos -->
-    <record id="rule_purchase_indirectos" model="ir.rule">
-        <field name="name">Ver Órdenes de Indirectos</field>
-        <field name="model_id" ref="purchase.model_purchase_order" />
-        <field name="domain_force">[('tipo_de_orden', '=', 'indirectos')]</field>
-        <field name="groups" eval="[(4, ref('purchase_order_sequence.group_purchase_indirectos'))]" />
-    </record>
 </odoo>
+
