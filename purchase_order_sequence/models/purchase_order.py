@@ -12,6 +12,7 @@ class PurchaseOrder(models.Model):
 @api.model
 def create(self, vals):
     if vals.get('tipo_de_orden') == 'indirectos':
-        vals['name'] = self.env['ir.sequence'].next_by_code('purchase.order.indirectos') or _('New')
+        vals['name'] = self.env['ir.sequence'].next_by_code('IN') or _('New')
     return super(PurchaseOrder, self).create(vals)
+
 
