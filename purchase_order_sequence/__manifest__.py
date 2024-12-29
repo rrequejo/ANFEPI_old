@@ -9,6 +9,7 @@
     'depends': ['purchase'],
     'data': [
         'data/groups_and_rules.xml',  # Archivo de datos para grupos y reglas
+        'views/purchase_order_views.xml',
     ],
     'installable': True,
     'application': False,
