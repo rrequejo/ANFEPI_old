@@ -1,22 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <record id="view_purchase_order_form_inherit_tipo_de_orden" model="ir.ui.view">
-        <field name="name">purchase.order.form.tipo.de.orden</field>
+    <!-- Herencia de la vista tree de las órdenes de compra -->
+    <record id="view_purchase_order_tree_inherit_tipo_de_orden" model="ir.ui.view">
+        <field name="name">purchase.order.tree.tipo.de.orden</field>
         <field name="model">purchase.order</field>
-        <field name="inherit_id" ref="purchase.purchase_order_form"/>
+        <field name="inherit_id" ref="purchase.purchase_order_tree"/>
         <field name="arch" type="xml">
-            <xpath expr="//sheet//group" position="inside">
+            <xpath expr="//tree" position="inside">
                 <field name="tipo_de_orden"/>
             </xpath>
         </field>
     </record>
 
-    <record id="view_purchase_order_tree_inherit_tipo_de_orden" model="ir.ui.view">
-        <field name="name">purchase.order.tree.tipo.de.orden</field>
+    <!-- Herencia de la vista form de las órdenes de compra -->
+    <record id="view_purchase_order_form_inherit_tipo_de_orden" model="ir.ui.view">
+        <field name="name">purchase.order.form.tipo.de.orden</field>
         <field name="model">purchase.order</field>
-        <field name="inherit_id" ref="purchase.view_purchase_order_tree"/>
+        <field name="inherit_id" ref="purchase.purchase_order_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//tree" position="inside">
-                <field name="tipo_de_orden"/>
+            <xpath expr="//sheet" position="inside">
+                <group>
+                    <field name="tipo_de_orden"/>
+                </group>
             </xpath>
         </field>
     </record>
