@@ -6,7 +6,19 @@
         <field name="model">purchase.order</field>
         <field name="inherit_id" ref="purchase.purchase_order_tree"/>
         <field name="arch" type="xml">
-            <xpath expr="//tree" position="inside">
+            <xpath expr="//field[@name='name']" position="after">
+                <field name="tipo_de_orden"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Herencia de la vista kpis_tree de las órdenes de compra -->
+    <record id="view_purchase_order_kpis_tree_inherit_tipo_de_orden" model="ir.ui.view">
+        <field name="name">purchase.order.kpis.tree.tipo.de.orden</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_kpis_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='name']" position="after">
                 <field name="tipo_de_orden"/>
             </xpath>
         </field>
@@ -18,10 +30,9 @@
         <field name="model">purchase.order</field>
         <field name="inherit_id" ref="purchase.purchase_order_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//sheet" position="inside">
-                <group>
-                    <field name="tipo_de_orden"/>
-                </group>
+            <!-- Posicionar tipo_de_orden justo antes de date_approve -->
+            <xpath expr="//field[@name='date_approve']" position="before">
+                <field name="tipo_de_orden"/>
             </xpath>
         </field>
     </record>
