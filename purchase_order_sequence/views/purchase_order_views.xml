@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Herencia de la vista tree de las órdenes de compra -->
+    <!-- Herencia de la vista tree de las órdenes de compra y solicitudes de cotización -->
     <record id="view_purchase_order_tree_inherit_tipo_de_orden" model="ir.ui.view">
         <field name="name">purchase.order.tree.tipo.de.orden</field>
         <field name="model">purchase.order</field>
@@ -21,6 +21,19 @@
         <field name="arch" type="xml">
             <!-- Posiciona el campo 'tipo_de_orden' antes del campo 'date_order' -->
             <xpath expr="//field[@name='date_order']" position="before">
+                <field name="tipo_de_orden"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Herencia de la vista tree de solicitudes de cotización -->
+    <record id="view_purchase_rfq_tree_inherit_tipo_de_orden" model="ir.ui.view">
+        <field name="name">purchase.rfq.tree.tipo.de.orden</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_tree"/>
+        <field name="arch" type="xml">
+            <!-- Inserta el campo 'tipo_de_orden' después del campo 'name' -->
+            <xpath expr="//field[@name='name']" position="after">
                 <field name="tipo_de_orden"/>
             </xpath>
         </field>
