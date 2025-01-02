@@ -28,9 +28,9 @@
     </record>
 
     <!-- Menú principal y submenú -->
-    <menuitem id="menu_account_move_txt_root" name="Pólizas" parent="account.menu_accounting" sequence="20"/>
-    <menuitem id="menu_account_move_txt" name="Importar Póliza de Nómina" parent="menu_account_move_txt_root" action="action_import_account_move_txt" sequence="30"/>
+    <menuitem id="menu_account_move_txt" name="Importar Póliza de Nómina" parent="account.menu_finance_entries" action="action_import_account_move_txt" sequence="20"/>
 </odoo>
+
 
 
 
