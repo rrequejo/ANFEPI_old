@@ -1,0 +1,5 @@
+<odoo>
+    <record id="group_import_account_move_txt" model="res.groups">
+        <field name="name">Importar Pólizas</field>
+    </record>
+</odoo>

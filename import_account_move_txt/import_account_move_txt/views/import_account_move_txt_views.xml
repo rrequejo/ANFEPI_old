@@ -1,0 +1,36 @@
+<odoo>
+    <record id="view_import_account_move_txt_form" model="ir.ui.view">
+        <field name="name">import.account.move.txt.form</field>
+        <field name="model">import.account.move.txt</field>
+        <field name="arch" type="xml">
+            <form string="Importar Póliza de Nómina">
+                <sheet>
+                    <group>
+                        <field name="file_data" widget="binary" filename="file_name" required="1"/>
+                        <field name="file_name" readonly="1"/>
+                        <field name="journal_id" required="1"/>
+                    </group>
+                    <footer>
+                        <button string="Importar" type="object" name="import_txt" class="btn-primary" groups="module_name.group_import_account_move_txt"/>
+                        <button string="Cancelar" class="btn-secondary" special="cancel"/>
+                    </footer>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_import_account_move_txt" model="ir.actions.act_window">
+        <field name="name">Importar Póliza de Nómina</field>
+        <field name="res_model">import.account.move.txt</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_import_account_move_txt_form"/>
+    </record>
+
+    <menuitem id="menu_account_move_txt" name="Importar Póliza de Nómina" parent="account.menu_finance_entries" action="action_import_account_move_txt" sequence="20"/>
+</odoo>
+
+
+
+
+
+
