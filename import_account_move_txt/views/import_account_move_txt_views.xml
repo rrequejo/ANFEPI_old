@@ -28,6 +28,8 @@
     </record>
 
     <!-- Menú principal y submenú -->
-    <menuitem id="menu_account_move_txt" name="Póliza Nómina" parent="account.menu_finance" action="action_import_account_move_txt"/>
+    <menuitem id="menu_account_move_txt_root" name="Pólizas" parent="account.menu_finance" sequence="10"/>
+    <menuitem id="menu_account_move_txt" name="Importar Póliza de Nómina" parent="menu_account_move_txt_root" action="action_import_account_move_txt" sequence="20"/>
 </odoo>
+
 
